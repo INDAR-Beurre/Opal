@@ -11,6 +11,7 @@ class TrackTile extends StatelessWidget {
   final bool isPlaying;
   final bool showThumbnail;
   final Widget? trailing;
+  final int? trackNumber;
 
   const TrackTile({
     super.key,
@@ -20,6 +21,7 @@ class TrackTile extends StatelessWidget {
     this.isPlaying = false,
     this.showThumbnail = true,
     this.trailing,
+    this.trackNumber,
   });
 
   @override
@@ -32,54 +34,70 @@ class TrackTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
+            // Track number (for album tracks)
+            if (trackNumber != null) ...[
+              SizedBox(
+                width: 24,
+                child: Text(
+                  '$trackNumber',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isPlaying
+                        ? AppTheme.primaryAccent
+                        : AppTheme.textTertiary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
             if (showThumbnail) ...[
-              // Thumbnail
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: SizedBox(
-                  width: 52,
-                  height: 52,
+                  width: 48,
+                  height: 48,
                   child: track.thumbnailUrl.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: track.thumbnailUrl,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            color: AppTheme.surfaceElevated,
-                            child: const Icon(Icons.music_note_rounded,
-                                color: AppTheme.textTertiary, size: 24),
-                          ),
-                          errorWidget: (_, __, ___) => Container(
-                            color: AppTheme.surfaceElevated,
-                            child: const Icon(Icons.music_note_rounded,
-                                color: AppTheme.textTertiary, size: 24),
-                          ),
+                          placeholder: (_, __) => _placeholder(),
+                          errorWidget: (_, __, ___) => _placeholder(),
                         )
-                      : Container(
-                          color: AppTheme.surfaceElevated,
-                          child: const Icon(Icons.music_note_rounded,
-                              color: AppTheme.textTertiary, size: 24),
-                        ),
+                      : _placeholder(),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
             ],
-            // Title + artist
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    track.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: isPlaying
-                          ? AppTheme.primaryAccent
-                          : AppTheme.textPrimary,
-                      fontSize: 14,
-                      fontWeight:
-                          isPlaying ? FontWeight.w600 : FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          track.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isPlaying
+                                ? AppTheme.primaryAccent
+                                : AppTheme.textPrimary,
+                            fontSize: 14,
+                            fontWeight:
+                                isPlaying ? FontWeight.w600 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      if (track.isExplicit)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Icon(Icons.explicit_rounded,
+                              size: 16, color: AppTheme.textTertiary),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -92,7 +110,6 @@ class TrackTile extends StatelessWidget {
                 ],
               ),
             ),
-            // Duration
             if (track.durationSeconds > 0)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
@@ -102,9 +119,7 @@ class TrackTile extends StatelessWidget {
                       color: AppTheme.textTertiary, fontSize: 12),
                 ),
               ),
-            // Trailing widget (e.g. more button)
             if (trailing != null) trailing!,
-            // Now-playing indicator
             if (isPlaying)
               const Padding(
                 padding: EdgeInsets.only(left: 8),
@@ -115,9 +130,17 @@ class TrackTile extends StatelessWidget {
       ),
     );
   }
+
+  Widget _placeholder() {
+    return Container(
+      color: AppTheme.surfaceElevated,
+      child: const Icon(Icons.music_note_rounded,
+          color: AppTheme.textTertiary, size: 20),
+    );
+  }
 }
 
-/// Simple animated equaliser bars for now-playing indicator.
+/// Animated equaliser bars for now-playing indicator.
 class _PlayingBars extends StatefulWidget {
   const _PlayingBars();
 
@@ -153,8 +176,7 @@ class _PlayingBarsState extends State<_PlayingBars>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: List.generate(3, (i) {
-            final height =
-                6.0 + 8.0 * ((_ctrl.value + i * 0.3) % 1.0);
+            final height = 6.0 + 8.0 * ((_ctrl.value + i * 0.3) % 1.0);
             return Container(
               width: 3,
               height: height,
