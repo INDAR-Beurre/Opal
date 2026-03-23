@@ -7,6 +7,11 @@ class Track {
   final int durationSeconds;
   final String thumbnailUrl;
   final String? streamUrl;
+  final String? browseId; // For non-playable items (albums, playlists)
+  final bool isPlayable;
+  final int? trackNumber;
+  final String? setVideoId; // For playlist editing
+  final bool isExplicit;
 
   const Track({
     required this.id,
@@ -16,6 +21,11 @@ class Track {
     this.durationSeconds = 0,
     this.thumbnailUrl = '',
     this.streamUrl,
+    this.browseId,
+    this.isPlayable = true,
+    this.trackNumber,
+    this.setVideoId,
+    this.isExplicit = false,
   });
 
   Duration get duration => Duration(seconds: durationSeconds);
@@ -30,25 +40,35 @@ class Track {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  /// High-quality thumbnail (YouTube provides multiple sizes)
+  /// High-quality thumbnail (YouTube provides multiple sizes).
   String get highResThumbnail {
     if (thumbnailUrl.contains('lh3.googleusercontent.com') ||
         thumbnailUrl.contains('yt3.ggpht.com')) {
-      // YouTube Music thumbnail — request high res
       return thumbnailUrl.replaceAll(RegExp(r'=w\d+-h\d+'), '=w500-h500');
     }
     return thumbnailUrl;
   }
 
-  Track copyWith({String? streamUrl}) {
+  Track copyWith({
+    String? streamUrl,
+    String? thumbnailUrl,
+    int? durationSeconds,
+    String? artist,
+    String? album,
+  }) {
     return Track(
       id: id,
       title: title,
-      artist: artist,
-      album: album,
-      durationSeconds: durationSeconds,
-      thumbnailUrl: thumbnailUrl,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       streamUrl: streamUrl ?? this.streamUrl,
+      browseId: browseId,
+      isPlayable: isPlayable,
+      trackNumber: trackNumber,
+      setVideoId: setVideoId,
+      isExplicit: isExplicit,
     );
   }
 

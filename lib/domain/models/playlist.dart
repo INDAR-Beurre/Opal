@@ -7,6 +7,8 @@ class Playlist {
   final String? thumbnailUrl;
   final int trackCount;
   final List<Track> tracks;
+  final String? continuation;
+  final String? description;
 
   const Playlist({
     required this.id,
@@ -15,5 +17,10 @@ class Playlist {
     this.thumbnailUrl,
     this.trackCount = 0,
     this.tracks = const [],
+    this.continuation,
+    this.description,
   });
+
+  Duration get totalDuration =>
+      Duration(seconds: tracks.fold(0, (sum, t) => sum + t.durationSeconds));
 }

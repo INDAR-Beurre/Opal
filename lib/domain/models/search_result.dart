@@ -20,4 +20,11 @@ class SearchResult {
     this.type = SearchResultType.song,
     this.browseId,
   });
+
+  String get formattedDuration {
+    if (durationSeconds <= 0) return '';
+    final m = durationSeconds ~/ 60;
+    final s = durationSeconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
 }
