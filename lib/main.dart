@@ -16,7 +16,7 @@ import 'ui/theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Transparent status bar
+  // Edge-to-edge UI
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
@@ -29,11 +29,13 @@ Future<void> main() async {
   final settings = SettingsProvider();
   await settings.init();
 
-  // Create repository and inject cookie if saved
+  // Create repository and apply saved settings
   final repo = MusicRepository();
   if (settings.cookie != null) {
     repo.setCookie(settings.cookie);
   }
+  repo.setRegion(settings.region);
+  repo.setAudioQuality(settings.audioQuality);
 
   runApp(
     MultiProvider(
@@ -44,18 +46,18 @@ Future<void> main() async {
           create: (_) => PlaybackController(repository: repo),
         ),
       ],
-      child: const LiquidGlassApp(),
+      child: const OpalApp(),
     ),
   );
 }
 
-class LiquidGlassApp extends StatelessWidget {
-  const LiquidGlassApp({super.key});
+class OpalApp extends StatelessWidget {
+  const OpalApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'LiquidGlass Music',
+      title: 'Opal',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       initialRoute: '/',
@@ -65,8 +67,7 @@ class LiquidGlassApp extends StatelessWidget {
             return MaterialPageRoute(
                 builder: (_) => const SplashScreen());
           case '/home':
-            return MaterialPageRoute(
-                builder: (_) => const AppShell());
+            return MaterialPageRoute(builder: (_) => const AppShell());
           case '/now_playing':
             return PageRouteBuilder(
               pageBuilder: (_, __, ___) => const NowPlayingScreen(),
@@ -78,6 +79,7 @@ class LiquidGlassApp extends StatelessWidget {
                     parent: anim, curve: Curves.easeOutCubic)),
                 child: child,
               ),
+              transitionDuration: const Duration(milliseconds: 350),
             );
           case '/playlist_detail':
             final browseId = settings.arguments as String;
@@ -98,8 +100,7 @@ class LiquidGlassApp extends StatelessWidget {
               builder: (_) => const SettingsScreen(),
             );
           default:
-            return MaterialPageRoute(
-                builder: (_) => const AppShell());
+            return MaterialPageRoute(builder: (_) => const AppShell());
         }
       },
     );

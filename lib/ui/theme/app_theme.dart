@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// The LiquidGlass app theme — deep dark base so glass effects pop.
+/// Opal app theme — deep dark base so glass effects pop.
 class AppTheme {
   AppTheme._();
 
@@ -80,7 +80,7 @@ class AppTheme {
       ),
       iconTheme: const IconThemeData(color: textPrimary, size: 22),
       dividerTheme: DividerThemeData(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         thickness: 0.5,
       ),
       splashColor: Colors.white12,

@@ -1,7 +1,7 @@
-name: liquid_glass_ytm_client
-description: A YouTube Music client with Liquid Glass UI built in Flutter.
+name: opal
+description: Opal — A YouTube Music client with Liquid Glass UI built in Flutter.
 publish_to: 'none'
-version: 2.0.0+2
+version: 3.0.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -14,17 +14,19 @@ dependencies:
   provider: ^6.1.2
   # Audio
   just_audio: ^0.9.39
-  just_audio_background: ^0.0.1-beta.13
   audio_session: ^0.1.21
   audio_service: ^0.18.15
   # Network
   http: ^1.2.1
+  crypto: ^3.0.3
   # Images
   cached_network_image: ^3.3.1
   # Storage
   shared_preferences: ^2.2.3
   # URL launcher for Google login
   url_launcher: ^6.2.5
+  # Connectivity
+  connectivity_plus: ^6.0.3
 
 dev_dependencies:
   flutter_test:
