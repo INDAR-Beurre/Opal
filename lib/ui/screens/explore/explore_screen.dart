@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../data/innertube/innertube_service.dart'
+    show MoodCategory, MoodItem;
+import '../../../domain/models/home_section.dart';
 import '../../../domain/models/track.dart';
 import '../../../domain/repositories/music_repository.dart';
 import '../../../player/playback_controller.dart';
 import '../../liquid_glass/liquid_glass.dart';
+import '../../widgets/section_header.dart';
+import '../../widgets/shimmer_loading.dart';
+import '../../widgets/error_view.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/track_tile.dart';
 
-/// Explore tab — shows trending / charts from InnerTube.
+/// Explore screen showing moods/genres and charts/trending content.
+///
+/// Fetches data from [MusicRepository.getMoodsAndGenres] and
+/// [MusicRepository.getCharts], displaying mood chips in a [Wrap] and
+/// chart sections as horizontal scrolling carousels.
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
@@ -18,7 +27,8 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen>
     with AutomaticKeepAliveClientMixin {
-  List<Track> _tracks = [];
+  List<MoodCategory> _moodCategories = [];
+  List<HomeSection> _chartSections = [];
   bool _loading = true;
   String? _error;
 
@@ -28,20 +38,26 @@ class _ExploreScreenState extends State<ExploreScreen>
   @override
   void initState() {
     super.initState();
-    _loadTrending();
+    _loadContent();
   }
 
-  Future<void> _loadTrending() async {
+  // ── Data fetching ──
+
+  Future<void> _loadContent() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final repo = context.read<MusicRepository>();
-      final tracks = await repo.getTrending();
+      final results = await Future.wait([
+        repo.getMoodsAndGenres(),
+        repo.getCharts(),
+      ]);
       if (mounted) {
         setState(() {
-          _tracks = tracks;
+          _moodCategories = results[0] as List<MoodCategory>;
+          _chartSections = results[1] as List<HomeSection>;
           _loading = false;
         });
       }
@@ -55,297 +71,308 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
   }
 
+  // ── Track interaction ──
+
+  void _onTrackTap(Track track, List<Track> siblings, int index) {
+    if (track.isPlayable) {
+      context.read<PlaybackController>().setQueue(siblings, startIndex: index);
+    } else if (track.browseId != null) {
+      Navigator.of(context).pushNamed(
+        '/playlist_detail',
+        arguments: {'browseId': track.browseId},
+      );
+    }
+  }
+
+  void _onMoodTap(MoodItem item) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(item.title),
+        backgroundColor: AppTheme.surfaceElevated,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ── Build ──
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: _buildBody(),
+    );
+  }
 
-    return CustomScrollView(
-      physics:
-          const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: MediaQuery.of(context).padding.top + 16,
-                bottom: 8),
-            child: Text('Explore',
-                style: Theme.of(context).textTheme.headlineLarge),
-          ),
-        ),
-        // Genre chips
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 90,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              children: [
-                _GenreChip(
-                    label: 'Pop',
-                    color: const Color(0xFF7EB8FF),
-                    icon: Icons.star_rounded),
-                _GenreChip(
-                    label: 'Hip-Hop',
-                    color: const Color(0xFFFF8A65),
-                    icon: Icons.mic_rounded),
-                _GenreChip(
-                    label: 'Electronic',
-                    color: const Color(0xFF9EE4D0),
-                    icon: Icons.surround_sound_rounded),
-                _GenreChip(
-                    label: 'Rock',
-                    color: const Color(0xFFFF6B8A),
-                    icon: Icons.music_note_rounded),
-                _GenreChip(
-                    label: 'Classical',
-                    color: const Color(0xFFB39DDB),
-                    icon: Icons.piano_rounded),
-                _GenreChip(
-                    label: 'Jazz',
-                    color: const Color(0xFFFFD54F),
-                    icon: Icons.nightlife_rounded),
-              ],
-            ),
-          ),
-        ),
-        // Trending header
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 8),
-            child: Text('Trending',
-                style: Theme.of(context).textTheme.headlineSmall),
-          ),
-        ),
-        // Content
-        if (_loading)
-          const SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-                child:
-                    CircularProgressIndicator(color: AppTheme.primaryAccent)),
-          )
-        else if (_error != null)
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.cloud_off_rounded,
-                      size: 48, color: Colors.white.withOpacity(0.2)),
-                  const SizedBox(height: 12),
-                  const Text('Could not load trending',
-                      style: TextStyle(color: AppTheme.textSecondary)),
-                  const SizedBox(height: 12),
-                  TextButton(
-                      onPressed: _loadTrending,
-                      child: const Text('Retry')),
-                ],
-              ),
-            ),
-          )
-        else if (_tracks.isEmpty)
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.explore_rounded,
-                      size: 48, color: Colors.white.withOpacity(0.2)),
-                  const SizedBox(height: 12),
-                  const Text('No trending content available',
-                      style: TextStyle(color: AppTheme.textSecondary)),
-                ],
-              ),
-            ),
-          )
-        else ...[
-          // Top 3 featured
-          if (_tracks.length >= 3)
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  itemCount: _tracks.take(10).length,
-                  itemBuilder: (context, i) {
-                    final t = _tracks[i];
-                    return _FeaturedCard(
-                      track: t,
-                      rank: i + 1,
-                      onTap: () {
-                        context
-                            .read<PlaybackController>()
-                            .setQueue(_tracks, startIndex: i);
-                      },
-                    );
-                  },
+  Widget _buildBody() {
+    if (_loading) return _buildLoadingState();
+    if (_error != null) return _buildErrorState();
+    return _buildContent();
+  }
+
+  // ── Loading state ──
+
+  Widget _buildLoadingState() {
+    return SafeArea(
+      child: ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(top: 16),
+        children: [
+          _buildTitle(),
+          const SizedBox(height: 16),
+          // Shimmer chips
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(
+                8,
+                (_) => const ShimmerLoading(
+                  width: 90,
+                  height: 36,
+                  borderRadius: 20,
                 ),
               ),
             ),
-          // Full list
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(
-                  left: 20, right: 20, top: 24, bottom: 8),
-              child: Text('All Trending',
-                  style: Theme.of(context).textTheme.headlineSmall),
-            ),
           ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, i) {
-                final track = _tracks[i];
-                return TrackTile(
-                  track: track,
-                  onTap: () {
-                    context
-                        .read<PlaybackController>()
-                        .setQueue(_tracks, startIndex: i);
-                  },
-                  isPlaying: context
-                          .watch<PlaybackController>()
-                          .currentTrack
-                          ?.id ==
-                      track.id,
-                );
-              },
-              childCount: _tracks.length,
-            ),
-          ),
+          const SizedBox(height: 28),
+          const ShimmerCardSection(),
+          const SizedBox(height: 24),
+          const ShimmerCardSection(),
         ],
-        const SliverToBoxAdapter(child: SizedBox(height: 160)),
-      ],
+      ),
     );
   }
-}
 
-class _GenreChip extends StatelessWidget {
-  final String label;
-  final Color color;
-  final IconData icon;
+  // ── Error state ──
 
-  const _GenreChip({
-    required this.label,
-    required this.color,
-    required this.icon,
-  });
+  Widget _buildErrorState() {
+    return SafeArea(
+      child: Column(
+        children: [
+          _buildTitle(),
+          const Spacer(),
+          ErrorView(
+            message: _error!.length > 120
+                ? '${_error!.substring(0, 120)}...'
+                : _error!,
+            onRetry: _loadContent,
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 90,
-      margin: const EdgeInsets.symmetric(horizontal: 5),
-      child: LiquidGlassContainer(
-        borderRadius: 16,
-        intensity: 0.5,
-        tintColor: color.withOpacity(0.1),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 6),
-            Text(label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600)),
-          ],
+  // ── Success content ──
+
+  Widget _buildContent() {
+    return RefreshIndicator(
+      onRefresh: _loadContent,
+      color: AppTheme.primaryAccent,
+      backgroundColor: AppTheme.surfaceElevated,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
         ),
+        slivers: [
+          // Title
+          SliverToBoxAdapter(
+            child: SafeArea(
+              bottom: false,
+              child: _buildTitle(),
+            ),
+          ),
+
+          // Moods & Genres
+          if (_moodCategories.isNotEmpty) ...[
+            for (final category in _moodCategories) ...[
+              SliverToBoxAdapter(
+                child: SectionHeader(title: category.title),
+              ),
+              SliverToBoxAdapter(
+                child: _buildMoodChips(category.items),
+              ),
+            ],
+          ],
+
+          // Charts / Trending sections
+          if (_chartSections.isNotEmpty) ...[
+            for (final section in _chartSections) ...[
+              SliverToBoxAdapter(
+                child: SectionHeader(title: section.title),
+              ),
+              SliverToBoxAdapter(
+                child: _buildHorizontalTrackList(section.tracks),
+              ),
+            ],
+          ],
+
+          // Empty state
+          if (_moodCategories.isEmpty && _chartSections.isEmpty)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Text(
+                  'No explore content available',
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+              ),
+            ),
+
+          // Bottom spacing for mini-player + nav bar
+          const SliverToBoxAdapter(child: SizedBox(height: 160)),
+        ],
+      ),
+    );
+  }
+
+  // ── Title ──
+
+  Widget _buildTitle() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+      child: Text(
+        'Explore',
+        style: Theme.of(context).textTheme.headlineLarge,
+      ),
+    );
+  }
+
+  // ── Mood / Genre chips ──
+
+  Widget _buildMoodChips(List<MoodItem> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: items.map((item) {
+          return LiquidGlassChip(
+            label: item.title,
+            onTap: () => _onMoodTap(item),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ── Horizontal scrolling track list ──
+
+  Widget _buildHorizontalTrackList(List<Track> tracks) {
+    if (tracks.isEmpty) return const SizedBox.shrink();
+    return SizedBox(
+      height: 200,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        itemCount: tracks.length,
+        itemBuilder: (context, index) {
+          final track = tracks[index];
+          return _TrackCard(
+            track: track,
+            onTap: () => _onTrackTap(track, tracks, index),
+          );
+        },
       ),
     );
   }
 }
 
-class _FeaturedCard extends StatelessWidget {
+/// A single track card rendered as a LiquidGlass surface with thumbnail,
+/// title and artist. Shared across chart sections.
+class _TrackCard extends StatelessWidget {
   final Track track;
-  final int rank;
   final VoidCallback onTap;
 
-  const _FeaturedCard({
-    required this.track,
-    required this.rank,
-    required this.onTap,
-  });
+  const _TrackCard({required this.track, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return LiquidGlassCard(
       onTap: onTap,
-      child: Container(
-        width: 160,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        child: LiquidGlassCard(
-          padding: EdgeInsets.zero,
-          margin: EdgeInsets.zero,
-          borderRadius: 16,
-          child: Stack(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: SizedBox(
-                      height: 130,
-                      width: double.infinity,
-                      child: track.thumbnailUrl.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: track.highResThumbnail,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) =>
-                                  Container(color: AppTheme.surfaceElevated),
-                            )
-                          : Container(color: AppTheme.surfaceElevated),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 3),
-                    child: Text(track.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary)),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-                    child: Text(track.artist,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 10, color: AppTheme.textSecondary)),
-                  ),
-                ],
-              ),
-              // Rank badge
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text('#$rank',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
+      width: 155,
+      borderRadius: 16,
+      padding: EdgeInsets.zero,
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Thumbnail
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+            child: SizedBox(
+              height: 130,
+              width: double.infinity,
+              child: track.thumbnailUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: track.highResThumbnail,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        color: AppTheme.surfaceElevated,
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppTheme.textTertiary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (_, __, ___) => _thumbnailPlaceholder(),
+                    )
+                  : _thumbnailPlaceholder(),
+            ),
           ),
+
+          // Title
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
+            child: Text(
+              track.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ),
+
+          // Artist
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+            child: Text(
+              track.artist,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _thumbnailPlaceholder() {
+    return Container(
+      color: AppTheme.surfaceElevated,
+      child: const Center(
+        child: Icon(
+          Icons.music_note_rounded,
+          color: AppTheme.textTertiary,
+          size: 32,
         ),
       ),
     );

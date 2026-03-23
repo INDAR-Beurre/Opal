@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Animated splash screen with Liquid Glass branding.
+/// Animated splash screen with Opal branding.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -26,7 +26,6 @@ class _SplashScreenState extends State<SplashScreen>
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack));
     _ctrl.forward();
 
-    // Navigate after splash
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
@@ -52,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Glass orb with icon
+                // Glass orb
                 ClipOval(
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
@@ -64,16 +63,18 @@ class _SplashScreenState extends State<SplashScreen>
                         gradient: RadialGradient(
                           center: const Alignment(-0.3, -0.3),
                           colors: [
-                            Colors.white.withOpacity(0.18),
-                            Colors.white.withOpacity(0.04),
+                            Colors.white.withValues(alpha: 0.18),
+                            Colors.white.withValues(alpha: 0.04),
                             Colors.transparent,
                           ],
                         ),
                         border: Border.all(
-                            color: Colors.white.withOpacity(0.15), width: 0.8),
+                            color: Colors.white.withValues(alpha: 0.15),
+                            width: 0.8),
                         boxShadow: [
                           BoxShadow(
-                              color: AppTheme.primaryAccent.withOpacity(0.12),
+                              color:
+                                  AppTheme.primaryAccent.withValues(alpha: 0.12),
                               blurRadius: 40,
                               spreadRadius: 2),
                         ],
@@ -87,19 +88,19 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'LiquidGlass Music',
+                  'Opal',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 28,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Powered by InnerTube',
+                  'YouTube Music Client',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
+                    color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                   ),

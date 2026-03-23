@@ -9,7 +9,7 @@ import 'explore/explore_screen.dart';
 import 'library/library_screen.dart';
 import 'now_playing/now_playing_screen.dart';
 
-/// The main app shell with 4 tabs and the persistent mini-player.
+/// Main app shell with 4 tabs and persistent mini-player.
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -40,7 +40,8 @@ class _AppShellState extends State<AppShell> {
             position: Tween<Offset>(
               begin: const Offset(0, 1),
               end: Offset.zero,
-            ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+            ).animate(
+                CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
             child: child,
           );
         },
@@ -64,8 +65,7 @@ class _AppShellState extends State<AppShell> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (hasTrack)
-            MiniPlayer(onTap: _openNowPlaying),
+          if (hasTrack) MiniPlayer(onTap: _openNowPlaying),
           LiquidGlassBottomBar(
             currentIndex: _currentTab,
             onTap: _onTabTap,
