@@ -1,8 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-/// A modal bottom sheet with the Liquid Glass aesthetic.
-/// Inspired by Demo 5's layered glass panels.
+/// Glass modal bottom sheet with drag handle.
 class LiquidGlassBottomSheet extends StatelessWidget {
   final Widget child;
   final double maxHeightFraction;
@@ -38,42 +37,43 @@ class LiquidGlassBottomSheet extends StatelessWidget {
         maxHeight: MediaQuery.of(context).size.height * maxHeightFraction,
       ),
       child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
           child: Container(
             decoration: BoxDecoration(
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withOpacity(0.14),
-                  Colors.white.withOpacity(0.04),
-                  Colors.black.withOpacity(0.08),
-                ],
-                stops: const [0.0, 0.3, 1.0],
-              ),
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              color: const Color(0xFF0A0A0F).withValues(alpha: 0.85),
               border: Border(
                 top: BorderSide(
-                    color: Colors.white.withOpacity(0.18), width: 0.7),
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 0.8,
+                ),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 32,
+                  offset: const Offset(0, -8),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 10),
                 // Drag handle
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.35),
-                    borderRadius: BorderRadius.circular(2),
+                Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 8),
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                      color: Colors.white.withValues(alpha: 0.25),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
                 Flexible(child: child),
               ],
             ),
