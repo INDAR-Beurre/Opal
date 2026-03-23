@@ -1,0 +1,37 @@
+name: liquid_glass_ytm_client
+description: A YouTube Music client with Liquid Glass UI built in Flutter.
+publish_to: 'none'
+version: 2.0.0+2
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  # State management
+  provider: ^6.1.2
+  # Audio
+  just_audio: ^0.9.39
+  just_audio_background: ^0.0.1-beta.13
+  audio_session: ^0.1.21
+  audio_service: ^0.18.15
+  # Network
+  http: ^1.2.1
+  # Images
+  cached_network_image: ^3.3.1
+  # Storage
+  shared_preferences: ^2.2.3
+  # URL launcher for Google login
+  url_launcher: ^6.2.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.2
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
